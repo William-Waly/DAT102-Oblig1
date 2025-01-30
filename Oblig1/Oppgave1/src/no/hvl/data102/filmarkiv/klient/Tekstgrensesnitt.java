@@ -1,85 +1,91 @@
 package no.hvl.data102.filmarkiv.klient;
 
+import no.hvl.data102.filmarkiv.impl.Sjanger;
 import no.hvl.data102.filmarkiv.impl.Film;
 import no.hvl.data102.filmarkiv.adt.FilmarkivADT;
-import no.hvl.data102.filmarkiv.impl.Sjanger;
+
 import java.util.Scanner;
 
 public class Tekstgrensesnitt {
-	// Leser inn opplysninger om en film fra tastatur og returnere et Film-objekt
-	public Film lesFilm() {
-		Scanner input = new Scanner(System.in);
-		System.out.println("Skriv inn filmnr: ");
-		int filmnr = Integer.parseInt(input.nextLine());
-		System.out.println("Skriv inn filmskaper: ");
-		String filmskaper = input.nextLine();
-		System.out.println("Skriv inn tittel: ");
-		String tittel = input.nextLine();
-		System.out.println("Skriv inn lanseringsår: ");
-		int lansering = Integer.parseInt(input.nextLine());
-		System.out.println("Skriv inn filmselskap: ");
-		String filmselskap = input.nextLine();
-		System.out.println("Skriv inn sjanger: ");
-		Sjanger sjanger = Sjanger.valueOf(input.nextLine());
-		input.close();
-		
-		Film film = new Film(filmnr, filmskaper, tittel, lansering, sjanger, filmselskap);
-		return film;
-	}
+    private final Scanner scanner = new Scanner(System.in);
 
-	// Skriver ut en film med alle opplysninger på skjerm (husk tekst for sjanger)
-	public void skrivUtFilm(Film film) {
-		if (film != null) {
-			System.out.println("Filmnummer: " + film.getFilmnr());
-			System.out.println("Filmskaper: " + film.getFilmskaper());
-			System.out.println("Tittel: " + film.getTittel());
-			System.out.println("Lanseringsår: " + film.getLansering());
-			System.out.println("Sjanger: " + film.getSjanger());
-			System.out.println("Filmselskap: " + film.getFilmselskap());
-		} else {
-			System.out.println("Ingen film å vise.");
-		}
+    public void leggTilFilm(FilmarkivADT arkiv) {
+        Film nyFilm = lesFilm();
+        arkiv.leggTilFilm(nyFilm);
+        System.out.println("Filmen er lagt til.");
+    }
 
-	}
+    public void slettFilm(FilmarkivADT arkiv, Scanner scanner) {
+        System.out.print("Skriv inn filmnummeret til filmen du vil slette: ");
+        int filmnr = scanner.nextInt();
+        boolean slettet = arkiv.slettFilm(filmnr);
+        System.out.println(slettet ? "Filmen ble slettet." : "Fant ingen film med dette nummeret.");
+    }
 
-	// Skriver ut alle filmer med en spesiell delstreng i tittelen
-	public void skrivUtFilmDelstrengITittel(FilmarkivADT arkiv, String delstreng) {
-		Film[] filmer = arkiv.soekTittel(delstreng);
+    public void skrivUtFilmDelstrengITittel(FilmarkivADT arkiv, Scanner scanner) {
+        System.out.print("Skriv inn en del av tittelen du vil søke etter: ");
+        String delstreng = scanner.next();
+        visFilmer(arkiv.soekTittel(delstreng));
+    }
 
-		if (filmer.length > 0) {
-			for (Film film : filmer) {
-				skrivUtFilm(film);
-				System.out.println();
-			}
-		} else {
-			System.out.println("Ingen filmer funnet med delstreng i tittelen: " + delstreng);
-		}
+    public void skrivUtFilmProdusent(FilmarkivADT arkiv, Scanner scanner) {
+        System.out.print("Skriv inn en produsent (eller del av navn): ");
+        String produsent = scanner.next();
+        visFilmer(arkiv.soekProdusent(produsent));
+    }
 
-	}
+    public void skrivUtStatistikk(FilmarkivADT arkiv) {
+        System.out.println("Antall filmer totalt: " + arkiv.antall());
+        for (Sjanger sjanger : Sjanger.values()) {
+            System.out.println(sjanger + ": " + arkiv.antall(sjanger));
+        }
+    }
 
-	// Skriver ut alle Filmer av en produsent (produsent er delstreng)
-	public void skrivUtFilmProdusent(FilmarkivADT arkiv, String delstreng) {
-		Film[] filmer = arkiv.soekProdusent(delstreng);
+    public void visAlleFilmer(FilmarkivADT arkiv) {
+        visFilmer(arkiv.soekTittel(""));
+    }
 
-		if (filmer.length > 0) {
-			for (Film film : filmer) {
-				skrivUtFilm(film);
-				System.out.println();
-			}
-		} else {
-			System.out.println("Ingen filmer funnet med produsent: " + delstreng);
-		}
+    private Film lesFilm() {
+        System.out.print("Filmnummer: ");
+        int filmnr = scanner.nextInt();
+        scanner.nextLine(); // Rydd opp etter tallinput
 
-	}
+        System.out.print("Regissør: ");
+        String regissor = scanner.nextLine();
 
-	// Skriver ut en enkel statistikk som inneholder antall filmer totalt
-	// og hvor mange det er i hver sjanger.
-	public void skrivUtStatistikk(FilmarkivADT arkiv) {
-		System.out.println("Antall filmer totalt: " + arkiv.antall());
-		for (Sjanger sjanger : Sjanger.values()) {
-			System.out.println("Antall filmer i sjangeren " + sjanger + ": " + arkiv.antall(sjanger));
-		}
+        System.out.print("Tittel: ");
+        String tittel = scanner.nextLine();
 
-	}
-	// osv ... andre metoder
+        System.out.print("Utgivelsesår: ");
+        int utgivelsesår = scanner.nextInt();
+        scanner.nextLine(); // Rydd opp etter tallinput
+
+        System.out.print("Sjanger (ACTION, DRAMA, SCIFI, COMEDY): ");
+        String sjangerStr = scanner.nextLine().toUpperCase();
+        Sjanger sjanger = Sjanger.valueOf(sjangerStr);
+
+        System.out.print("Filmselskap: ");
+        String selskap = scanner.nextLine();
+
+        return new Film(filmnr, regissor, tittel, utgivelsesår, sjanger, selskap);
+    }
+
+    private void visFilmer(Film[] filmer) {
+        if (filmer.length == 0) {
+            System.out.println("Ingen filmer funnet.");
+        } else {
+            for (Film film : filmer) {
+                skrivUtFilm(film);
+            }
+        }
+    }
+
+    private void skrivUtFilm(Film film) {
+        System.out.println("\nFilmnummer: " + film.getFilmnr());
+        System.out.println("Regissør: " + film.getFilmskaper());
+        System.out.println("Tittel: " + film.getTittel());
+        System.out.println("Utgivelsesår: " + film.getLansering());
+        System.out.println("Sjanger: " + film.getSjanger());
+        System.out.println("Filmselskap: " + film.getFilmselskap());
+    }
 }
